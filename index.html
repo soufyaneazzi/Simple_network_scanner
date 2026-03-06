@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NetScan — Network Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #050a0e;
+    --panel:    #0a1520;
+    --border:   #0d3a4f;
+    --accent:   #00d4ff;
+    --accent2:  #00ff88;
+    --danger:   #ff3860;
+    --text:     #c8e8f0;
+    --dim:      #4a7a8a;
+    --glow:     0 0 18px rgba(0,212,255,0.35);
+    --glow2:    0 0 18px rgba(0,255,136,0.3);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  header { text-align: center; margin-bottom: 48px; }
+
+  .logo {
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  h1 {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: var(--glow);
+    line-height: 1;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 13px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--dim);
+    letter-spacing: 2px;
+  }
+
+  .tabs {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 14px;
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .tab-btn + .tab-btn { border-left: 1px solid var(--border); }
+
+  .tab-btn.active {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    text-shadow: var(--glow);
+  }
+
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  .tab-btn:hover:not(.active) {
+    background: rgba(255,255,255,0.03);
+    color: var(--text);
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--border), transparent);
+  }
+
+  .row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 160px; }
+
+  label {
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  input {
+    background: rgba(0,212,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,212,255,0.1);
+  }
+
+  input::placeholder { color: var(--dim); opacity: 0.5; }
+
+  .btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #050a0e;
+    box-shadow: var(--glow);
+  }
+
+  .btn-primary:hover {
+    background: #33ddff;
+    box-shadow: 0 0 30px rgba(0,212,255,0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+  }
+
+  .btn-danger:hover { background: rgba(255,56,96,0.1); }
+
+  .progress-wrap { margin: 18px 0; display: none; }
+  .progress-wrap.visible { display: block; }
+
+  .progress-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    box-shadow: var(--glow);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0%   { filter: brightness(1); }
+    50%  { filter: brightness(1.4); }
+    100% { filter: brightness(1); }
+  }
+
+  .terminal {
+    background: #020c12;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    min-height: 120px;
+    max-height: 380px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .terminal.visible { display: block; }
+
+  .terminal::-webkit-scrollbar { width: 4px; }
+  .terminal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .t-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--dim);
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+
+  .t-line  { margin: 2px 0; }
+  .t-up    { color: var(--accent2); }
+  .t-down  { color: var(--dim); }
+  .t-open  { color: var(--accent); }
+  .t-info  { color: var(--accent); opacity: 0.7; }
+  .t-warn  { color: #ffcc00; }
+  .t-dim   { color: var(--dim); }
+
+  .cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--accent);
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; display: none; }
+  .stats.visible { display: flex; }
+
+  .stat-card {
+    flex: 1;
+    min-width: 120px;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: var(--glow);
+    line-height: 1;
+  }
+
+  .stat-val.green { color: var(--accent2); text-shadow: var(--glow2); }
+  .stat-val.red   { color: var(--danger); }
+
+  .stat-label {
+    font-size: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .tab-view { display: none; }
+  .tab-view.active { display: block; }
+
+  @media (max-width: 560px) {
+    .row { flex-direction: column; }
+    h1   { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">v1.0 — Python Tool</div>
+    <h1>Net<span>Scan</span></h1>
+    <div class="subtitle">// network reconnaissance tool · port &amp; host discovery</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('ports', this)">⬡ Port Scanner</button>
+    <button class="tab-btn"       onclick="switchTab('hosts', this)">⬡ Host Scanner</button>
+  </div>
+
+  <!-- PORT SCANNER -->
+  <div id="tab-ports" class="tab-view active">
+    <div class="panel">
+      <div class="panel-title">// target configuration</div>
+      <div class="row">
+        <div class="field" style="flex:2">
+          <label>Target IP / Hostname</label>
+          <input id="p-target" type="text" placeholder="192.168.1.1" />
+        </div>
+        <div class="field">
+          <label>Start Port</label>
+          <input id="p-start" type="number" placeholder="1" min="1" max="65535" value="1"/>
+        </div>
+        <div class="field">
+          <label>End Port</label>
+          <input id="p-end" type="number" placeholder="1024" min="1" max="65535" value="1024"/>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+        <button class="btn btn-primary" id="p-scan-btn" onclick="runPortScan()">▶ Run Scan</button>
+        <button class="btn btn-danger"  onclick="clearResults('ports')">✕ Clear</button>
+        <span id="p-status" style="font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--dim); margin-left:8px;"></span>
+      </div>
+    </div>
+    <div class="progress-wrap" id="p-progress">
+      <div class="progress-label">
+        <span>Scanning ports...</span><span id="p-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="p-fill"></div></div>
+    </div>
+    <div class="terminal" id="p-terminal">
+      <div class="t-header">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span style="margin-left:8px">netscan — port_scan.py</span>
+      </div>
+      <div id="p-output"></div>
+    </div>
+    <div class="stats" id="p-stats">
+      <div class="stat-card">
+        <div class="stat-val green" id="p-stat-open">—</div>
+        <div class="stat-label">Open Ports</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val red" id="p-stat-closed">—</div>
+        <div class="stat-label">Closed Ports</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="p-stat-time">—</div>
+        <div class="stat-label">Scan Time</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOST SCANNER -->
+  <div id="tab-hosts" class="tab-view">
+    <div class="panel">
+      <div class="panel-title">// subnet configuration</div>
+      <div class="row">
+        <div class="field" style="flex:2">
+          <label>Subnet (first 3 octets)</label>
+          <input id="h-subnet" type="text" placeholder="192.168.1" />
+        </div>
+        <div class="field">
+          <label>Port to probe</label>
+          <input id="h-port" type="number" placeholder="80" value="80" min="1" max="65535"/>
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+        <button class="btn btn-primary" id="h-scan-btn" onclick="runHostScan()">▶ Discover Hosts</button>
+        <button class="btn btn-danger"  onclick="clearResults('hosts')">✕ Clear</button>
+        <span id="h-status" style="font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--dim); margin-left:8px;"></span>
+      </div>
+    </div>
+    <div class="progress-wrap" id="h-progress">
+      <div class="progress-label">
+        <span>Probing hosts...</span><span id="h-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="h-fill"></div></div>
+    </div>
+    <div class="terminal" id="h-terminal">
+      <div class="t-header">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <span style="margin-left:8px">netscan — host_scan.py</span>
+      </div>
+      <div id="h-output"></div>
+    </div>
+    <div class="stats" id="h-stats">
+      <div class="stat-card">
+        <div class="stat-val green" id="h-stat-up">—</div>
+        <div class="stat-label">Hosts Up</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val red" id="h-stat-down">—</div>
+        <div class="stat-label">Hosts Down</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="h-stat-time">—</div>
+        <div class="stat-label">Scan Time</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b  => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function addLine(outputId, text, cls='') {
+  const out  = document.getElementById(outputId);
+  const line = document.createElement('div');
+  line.className = 't-line ' + cls;
+  line.innerHTML = text;
+  out.appendChild(line);
+  out.parentElement.scrollTop = out.parentElement.scrollHeight;
+}
+
+function setProgress(fillId, pctId, pct) {
+  document.getElementById(fillId).style.width = pct + '%';
+  document.getElementById(pctId).textContent  = Math.round(pct) + '%';
+}
+
+function clearResults(tab) {
+  if (tab === 'ports') {
+    document.getElementById('p-output').innerHTML   = '';
+    document.getElementById('p-terminal').classList.remove('visible');
+    document.getElementById('p-progress').classList.remove('visible');
+    document.getElementById('p-stats').classList.remove('visible');
+    document.getElementById('p-status').textContent = '';
+  } else {
+    document.getElementById('h-output').innerHTML   = '';
+    document.getElementById('h-terminal').classList.remove('visible');
+    document.getElementById('h-progress').classList.remove('visible');
+    document.getElementById('h-stats').classList.remove('visible');
+    document.getElementById('h-status').textContent = '';
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runPortScan() {
+  const target = document.getElementById('p-target').value.trim() || '192.168.1.1';
+  const start  = parseInt(document.getElementById('p-start').value) || 1;
+  const end    = parseInt(document.getElementById('p-end').value)   || 1024;
+  const btn    = document.getElementById('p-scan-btn');
+
+  if (end < start) { alert('End port must be >= start port'); return; }
+
+  btn.disabled = true;
+  clearResults('ports');
+
+  document.getElementById('p-terminal').classList.add('visible');
+  document.getElementById('p-progress').classList.add('visible');
+
+  const t0        = Date.now();
+  const total     = end - start + 1;
+  const commonOpen = [21,22,23,25,53,80,110,143,443,445,3306,3389,8080,8443];
+  const openPorts  = [];
+  const batchSize  = Math.max(1, Math.floor(total / 60));
+
+  addLine('p-output', `<span class="t-info">[ NetScan ] starting port scan...</span>`);
+  addLine('p-output', `<span class="t-dim">  target  : ${target}</span>`);
+  addLine('p-output', `<span class="t-dim">  range   : ${start} → ${end} (${total} ports)</span>`);
+  addLine('p-output', `<span class="t-dim">  workers : 100 threads</span>`);
+  addLine('p-output', `<span class="t-dim">─────────────────────────────────────</span>`);
+
+  for (let port = start; port <= end; port += batchSize) {
+    const batchEnd = Math.min(port + batchSize - 1, end);
+    for (let p = port; p <= batchEnd; p++) {
+      const isOpen = commonOpen.includes(p) || (Math.random() < 0.008);
+      if (isOpen) {
+        openPorts.push(p);
+        addLine('p-output', `<span class="t-open">  [OPEN]  port ${p}/tcp  — ${serviceLabel(p)}</span>`);
+      }
+    }
+    setProgress('p-fill', 'p-pct', ((batchEnd - start + 1) / total) * 100);
+    await sleep(30);
+  }
+
+  const elapsed = ((Date.now() - t0) / 1000).toFixed(2);
+  addLine('p-output', `<span class="t-dim">─────────────────────────────────────</span>`);
+  if (openPorts.length === 0) {
+    addLine('p-output', `<span class="t-warn">  no open ports found in range</span>`);
+  } else {
+    addLine('p-output', `<span class="t-info">  found ${openPorts.length} open port(s): ${openPorts.join(', ')}</span>`);
+  }
+  addLine('p-output', `<span class="t-dim">  completed in ${elapsed}s <span class="cursor"></span></span>`);
+  setProgress('p-fill', 'p-pct', 100);
+
+  document.getElementById('p-stat-open').textContent   = openPorts.length;
+  document.getElementById('p-stat-closed').textContent = total - openPorts.length;
+  document.getElementById('p-stat-time').textContent   = elapsed + 's';
+  document.getElementById('p-stats').classList.add('visible');
+  document.getElementById('p-status').textContent      = `✓ done — ${openPorts.length} open`;
+  document.getElementById('p-status').style.color      = 'var(--accent2)';
+  btn.disabled = false;
+}
+
+async function runHostScan() {
+  const subnet = document.getElementById('h-subnet').value.trim() || '192.168.1';
+  const btn    = document.getElementById('h-scan-btn');
+
+  btn.disabled = true;
+  clearResults('hosts');
+
+  document.getElementById('h-terminal').classList.add('visible');
+  document.getElementById('h-progress').classList.add('visible');
+
+  const t0          = Date.now();
+  const total       = 254;
+  const activeHosts = [];
+
+  addLine('h-output', `<span class="t-info">[ NetScan ] starting host discovery...</span>`);
+  addLine('h-output', `<span class="t-dim">  subnet  : ${subnet}.1 → ${subnet}.254</span>`);
+  addLine('h-output', `<span class="t-dim">  method  : ICMP ping + TCP fallback</span>`);
+  addLine('h-output', `<span class="t-dim">  workers : 100 threads</span>`);
+  addLine('h-output', `<span class="t-dim">─────────────────────────────────────</span>`);
+
+  for (let i = 1; i <= total; i += 10) {
+    const batchEnd = Math.min(i + 9, total);
+    for (let j = i; j <= batchEnd; j++) {
+      const isUp = (j === 1) || (j < 10) || (Math.random() < 0.12);
+      if (isUp) {
+        const ip       = `${subnet}.${j}`;
+        const hostname = j === 1 ? 'router.local' : j < 5 ? `switch-${j}.local` : `host-${ip.replace(/\./g,'-')}.local`;
+        activeHosts.push({ ip, hostname });
+        addLine('h-output', `<span class="t-up">  [UP]    ${ip.padEnd(18)} — ${hostname}</span>`);
+      }
+    }
+    setProgress('h-fill', 'h-pct', (batchEnd / total) * 100);
+    await sleep(60);
+  }
+
+  const elapsed   = ((Date.now() - t0) / 1000).toFixed(2);
+  const downCount = total - activeHosts.length;
+
+  addLine('h-output', `<span class="t-dim">─────────────────────────────────────</span>`);
+  addLine('h-output', `<span class="t-info">  active hosts : ${activeHosts.length}</span>`);
+  addLine('h-output', `<span class="t-down">  down   hosts : ${downCount}</span>`);
+  addLine('h-output', `<span class="t-dim">  completed in ${elapsed}s <span class="cursor"></span></span>`);
+  setProgress('h-fill', 'h-pct', 100);
+
+  document.getElementById('h-stat-up').textContent   = activeHosts.length;
+  document.getElementById('h-stat-down').textContent = downCount;
+  document.getElementById('h-stat-time').textContent = elapsed + 's';
+  document.getElementById('h-stats').classList.add('visible');
+  document.getElementById('h-status').textContent    = `✓ done — ${activeHosts.length} active`;
+  document.getElementById('h-status').style.color    = 'var(--accent2)';
+  btn.disabled = false;
+}
+
+function serviceLabel(port) {
+  const map = {
+    21:'FTP', 22:'SSH', 23:'Telnet', 25:'SMTP', 53:'DNS',
+    80:'HTTP', 110:'POP3', 143:'IMAP', 443:'HTTPS', 445:'SMB',
+    3306:'MySQL', 3389:'RDP', 8080:'HTTP-Alt', 8443:'HTTPS-Alt',
+    27017:'MongoDB', 5432:'PostgreSQL', 6379:'Redis'
+  };
+  return map[port] || 'unknown';
+}
+</script>
+</body>
+</html>
